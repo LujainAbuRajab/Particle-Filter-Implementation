@@ -27,6 +27,19 @@ void normalize(PFStruct* S) {
 			
 }
 
+int sample(PFStruct* S) {
+	float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX); // Generate a random number between 0 and 1
+	float cdf = 0.0;
+
+	for (int i = 0; i < l; i++) {
+		cdf += S[i].w;
+		if (r <= cdf) {
+			return i; // Return the index of the sampled particle
+		}
+	}
+
+	return l - 1; // Default case (should not reach here if weights are normalized)
+}
 
 void forWord(int steps, PFStruct S) {
 	S.x = S.x + abs(steps * cos(S.theta));
@@ -94,29 +107,3 @@ void main() {
 
 
 
-/* sampling
-double cum_dist_funct::real_cdf_function(vec X, double x, int N, int Ndft, vec& T, vec& Z)
-{
-	Z.set_size(X.length());
-	Z.zeros();
-	vec V;
-	V.set_size(N);
-	V.zeros();
-	double f0 = 0;
-	T.set_size(X.length());
-	T.zeros();
-	T = X;
-	for (int i = 0; i < Ndft; i++)
-	{
-		V = X.get(i * N, (i + 1) * N - 1);
-		for (int j = 0; j < N; j++)
-		{
-			if (x < V[0]) f0 = 0;
-			else if (V[j] <= x && x < V[j + 1]) f0 = j / N;
-			else if (x >= V[N - 1])      f0 = 1;
-			Z[i * N + j] = f0;
-		}
-	}
-	return f0;
-}
-*/
