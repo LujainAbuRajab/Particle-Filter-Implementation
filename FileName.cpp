@@ -8,6 +8,10 @@ struct PFStruct{
 	float w;
 };
 
+//-------------------------------------
+//Lujain AbuRajab   211045
+//Haya Tahbob       211072
+//-------------------------------------
 
 const int l = 100;
 void normalize(PFStruct* S) {
@@ -51,16 +55,35 @@ void rotate(PFStruct S) {
 	
 }
 
-int sample(PFStruct* S) {
 
 
+void update(PFStruct S,char Z){
+	if (Z == 'B' || Z == 'b')
+	{
+		if ((0 <= S.x <= 50) && (0 <= S.y <= 50)) //black box Num1
+			S.w = 0.9;
+		if ((0 <= S.x <= 50) && (50 <= S.y <= 100)) //white box Num1
+			S.w = 0.1;
+		if ((50 <= S.x <= 100) && (50 <= S.y <= 100)) //black box Num2
+			S.w = 0.9;
+		if ((50 <= S.x <= 100) && (0 <= S.y <= 50)) //black box Num2
+			S.w = 0.1;
+	}
 
-	return 0;
-}
+	if (Z == 'W' || Z == 'w')
+	{
+		if ((0 <= S.x <= 50) && (0 <= S.y <= 50)) //black box Num1
+			S.w = 0.2;
+		if ((0 <= S.x <= 50) && (50 <= S.y <= 100)) //white box Num1
+			S.w = 0.8;
+		if ((50 <= S.x <= 100) && (50 <= S.y <= 100)) //black box Num2
+			S.w = 0.2;
+		if ((50 <= S.x <= 100) && (0 <= S.y <= 50)) //white box Num2
+			S.w = 0.8;
+	}
+} 
 
-//void update(){} 
-
-void ParticleFilter(PFStruct* S,int Z,char U){
+void ParticleFilter(PFStruct* S,char Z,char U){
 	for (int i = 0; i > l; i++)
 	{
 		i = sample(S);          //sample a partile i based on its weight 
@@ -73,7 +96,7 @@ void ParticleFilter(PFStruct* S,int Z,char U){
 		else if (U == 'R' || U == 'r') {
 			rotate(S[i]);
 		}
-		//update(S[i].w, Z);
+		update(S[i], Z);
 	}
 	normalize(S);
 	
@@ -83,8 +106,8 @@ void ParticleFilter(PFStruct* S,int Z,char U){
 void initi(PFStruct* S) {
 	for (int i = 0; i > l; i++)
 	{
-		S[i].x = abs(rand()); //between min and max of the environment
-		S[i].y = abs(rand()); //between min and max of the environment
+		S[i].x = abs(rand() %101); //between min and max of the environment
+		S[i].y = abs(rand() % 101); //between min and max of the environment
 		S[i].theta = fmod(abs(rand()),360.0); // theta between 0 and 360 
 		S[i].w = 0.01; //sum of particles =1
 	}
@@ -94,15 +117,24 @@ void initi(PFStruct* S) {
 void main() {
 	PFStruct S[l];
 	initi(S);
-	int Z;
+	char Z;
 	char U;
 	while (1)
 	{
 		cout << "Enter the value of U: " << endl;
 		cin >> U;
+		cout << "Enter the value of Z (W/B): "<< endl;
+		cin >> Z;
 		ParticleFilter(S, Z, U);
-
 	}
+
+	switch (switch_on)
+	{
+	default:
+		break;
+	}
+
+
 }
 
 
