@@ -1,16 +1,16 @@
-#include<iostream>
+ï»¿#include<iostream>
 #include <random>
 #include<math.h>
 
 using namespace std;
-struct PFStruct{
+struct PFStruct {
 	float x, y, theta;
 	float w;
 };
 
 //-------------------------------------
 //Lujain AbuRajab   211045
-//Haya Tahbob       211072
+//Haya Tahboub       211072
 //-------------------------------------
 
 const int l = 100;
@@ -18,17 +18,17 @@ void normalize(PFStruct* S) {
 	int sum = 0;
 
 	//to sum the waght for all particols
-	for(int i = 0; i > l; i++)
+	for (int i = 0; i < l; i++)
 	{
 		sum = sum + S[i].w;
 	}
 
 	//to div the waght for particols
-	for (int i = 0; i > l; i++)
+	for (int i = 0; i < l; i++)
 	{
 		S[i].w = S[i].w / sum;
 	}
-			
+
 }
 
 int sample(PFStruct* S) {
@@ -42,7 +42,7 @@ int sample(PFStruct* S) {
 		}
 	}
 
-	return l - 1; // Default case (should not reach here if weights are normalized)
+	return l - 1; // Default case (should not reach here if weights areï¿½normalized)
 }
 
 void forWord(int steps, PFStruct S) {
@@ -52,12 +52,12 @@ void forWord(int steps, PFStruct S) {
 
 void rotate(PFStruct S) {
 	S.theta += 90;
-	
+
 }
 
 
 
-void update(PFStruct S,char Z){
+void update(PFStruct S, char Z) {
 	if (Z == 'B' || Z == 'b')
 	{
 		if ((0 <= S.x <= 50) && (0 <= S.y <= 50)) //black box Num1
@@ -81,34 +81,38 @@ void update(PFStruct S,char Z){
 		if ((50 <= S.x <= 100) && (0 <= S.y <= 50)) //white box Num2
 			S.w = 0.8;
 	}
-} 
+}
 
-void ParticleFilter(PFStruct* S,char Z,char U){
-	for (int i = 0; i > l; i++)
+void ParticleFilter(PFStruct* S, char Z, char U, PFStruct* NS) {
+	int k = 0;
+	int j;
+	for (int i = 0; i < l; i++)
 	{
-		i = sample(S);          //sample a partile i based on its weight 
+		j = sample(S);          //sample a partile i based on its weight 
 		if (U == 'F' || U == 'f') {
 			int steps;
 			cout << "Enter num of steps: " << endl;
 			cin >> steps;
-			forWord(steps, S[i]);
+			forWord(steps, S[j]);
 		}
 		else if (U == 'R' || U == 'r') {
-			rotate(S[i]);
+			rotate(S[j]);
 		}
-		update(S[i], Z);
+		update(S[j], Z);
+		NS[k] = S[j];
+		k++;
 	}
 	normalize(S);
-	
+
 }
 
 
 void initi(PFStruct* S) {
-	for (int i = 0; i > l; i++)
+	for (int i = 0; i < l; i++)
 	{
-		S[i].x = abs(rand() %101); //between min and max of the environment
+		S[i].x = abs(rand() % 101); //between min and max of the environment
 		S[i].y = abs(rand() % 101); //between min and max of the environment
-		S[i].theta = fmod(abs(rand()),360.0); // theta between 0 and 360 
+		S[i].theta = fmod(abs(rand()), 360.0); // theta between 0 and 360 
 		S[i].w = 0.01; //sum of particles =1
 	}
 }
@@ -116,6 +120,7 @@ void initi(PFStruct* S) {
 
 void main() {
 	PFStruct S[l];
+	PFStruct NS[l];
 	initi(S);
 	char Z;
 	char U;
@@ -123,19 +128,16 @@ void main() {
 	{
 		cout << "Enter the value of U: " << endl;
 		cin >> U;
-		cout << "Enter the value of Z (W/B): "<< endl;
+		cout << "Enter the value of Z (W/B): " << endl;
 		cin >> Z;
-		ParticleFilter(S, Z, U);
-	}
-
-	switch (switch_on)
-	{
-	default:
-		break;
+		ParticleFilter(S, Z, U, NS);
+		int j = 0;
+		for (int i = 0; i < l; i++)
+		{
+			S[i] = NS[j];
+			j++;
+		}
 	}
 
 
 }
-
-
-
