@@ -1,143 +1,184 @@
-﻿#include<iostream>
+﻿#include <cmath>
+#include <fstream>
+#include <iostream>
 #include <random>
-#include<math.h>
+#include <sstream>
+#include <string>
 
 using namespace std;
+
 struct PFStruct {
-	float x, y, theta;
-	float w;
+  float x, y, theta;
+  float w;
 };
 
-//-------------------------------------
-//Lujain AbuRajab   211045
-//Haya Tahboub       211072
-//-------------------------------------
+const int NUMParticles = 100;
 
-const int l = 100;
-void normalize(PFStruct* S) {
-	int sum = 0;
+void normalize(PFStruct *S) {
+  float sum = 0.0;
 
-	//to sum the waght for all particols
-	for (int i = 0; i < l; i++)
-	{
-		sum = sum + S[i].w;
-	}
+  // Sum the weights for all particles
+  for (int i = 0; i < NUMParticles; i++) {
+    sum += S[i].w;
+  }
 
-	//to div the waght for particols
-	for (int i = 0; i < l; i++)
-	{
-		S[i].w = S[i].w / sum;
-	}
-
+  // Divide the weights for each particle
+  for (int i = 0; i < NUMParticles; i++) {
+    S[i].w = S[i].w / sum;
+  }
 }
 
-int sample(PFStruct* S) {
-	float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX); // Generate a random number between 0 and 1
-	float cdf = 0.0;
+void readCSVLine(const string &filename, int lineNumber, float &x, float &y,
+                 float &displacement, float &angle) {
+  ifstream file(filename);
+  string line;
 
-	for (int i = 0; i < l; i++) {
-		cdf += S[i].w;
-		if (r <= cdf) {
-			return i; // Return the index of the sampled particle
-		}
-	}
-
-	return l - 1; // Default case (should not reach here if weights are�normalized)
+  for (int i = 1; i <= lineNumber; ++i) {
+    if (!getline(file, line)) {
+      cout << "Out of scope\n";
+      return;
+    }
+    if (i == lineNumber) {
+      istringstream iss(line);
+      string value;
+      int count = 0;
+      while (getline(iss, value, ',')) {
+        count++;
+        switch (count) {
+        case 1:
+          x = stof(value);
+          break;
+        case 2:
+          y = stof(value);
+          break;
+        case 3:
+          displacement = stof(value);
+          break;
+        case 4:
+          angle = stof(value);
+          break;
+        }
+      }
+      break;
+    }
+  }
+  file.close();
 }
 
-void forWord(int steps, PFStruct S) {
-	S.x = S.x + abs(steps * cos(S.theta));
-	S.y = S.y + abs(steps * sin(S.theta));
+int sample(PFStruct *S) {
+  float r = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+  float cdf = 0.0;
+
+  for (int i = 0; i < NUMParticles; i++) {
+    cdf += S[i].w;
+    if (r <= cdf) {
+      return i;
+    }
+  }
+
+  return NUMParticles - 1;
 }
 
-void rotate(PFStruct S) {
-	S.theta += 90;
-
+void forward(float steps, PFStruct &S) {
+  S.x = S.x + abs(steps * cos(S.theta));
+  S.y = S.y + abs(steps * sin(S.theta));
+  if (S.x < 0 || S.x > 100) {
+    S.x = fmod(abs(S.x), 100.0);
+  }
+  if (S.y < 0 || S.y > 100) {
+    S.y = fmod(abs(S.y), 100.0);
+  }
 }
 
+void rotate(float angle, PFStruct &S) { S.theta += angle; }
 
-
-void update(PFStruct S, char Z) {
-	if (Z == 'B' || Z == 'b')
-	{
-		if ((0 <= S.x <= 50) && (0 <= S.y <= 50)) //black box Num1
-			S.w = 0.9;
-		if ((0 <= S.x <= 50) && (50 <= S.y <= 100)) //white box Num1
-			S.w = 0.1;
-		if ((50 <= S.x <= 100) && (50 <= S.y <= 100)) //black box Num2
-			S.w = 0.9;
-		if ((50 <= S.x <= 100) && (0 <= S.y <= 50)) //black box Num2
-			S.w = 0.1;
-	}
-
-	if (Z == 'W' || Z == 'w')
-	{
-		if ((0 <= S.x <= 50) && (0 <= S.y <= 50)) //black box Num1
-			S.w = 0.2;
-		if ((0 <= S.x <= 50) && (50 <= S.y <= 100)) //white box Num1
-			S.w = 0.8;
-		if ((50 <= S.x <= 100) && (50 <= S.y <= 100)) //black box Num2
-			S.w = 0.2;
-		if ((50 <= S.x <= 100) && (0 <= S.y <= 50)) //white box Num2
-			S.w = 0.8;
-	}
+void update(PFStruct &S, char Z) {
+  if ((0 <= S.x && S.x <= 50) && (0 <= S.y && S.y <= 50)) // Black box Num1
+    S.w = (Z == 'B' || Z == 'b') ? 0.9 : 0.1;
+  else if ((0 <= S.x && S.x < 50) && (50 < S.y && S.y <= 100)) // White box Num1
+    S.w = (Z == 'B' || Z == 'b') ? 0.2 : 0.8;
+  else if ((50 <= S.x && S.x <= 100) &&
+           (50 <= S.y && S.y <= 100)) // Black box Num2
+    S.w = (Z == 'B' || Z == 'b') ? 0.9 : 0.1;
+  else if ((50 < S.x && S.x <= 100) && (0 <= S.y && S.y < 50)) // White box Num2
+    S.w = (Z == 'B' || Z == 'b') ? 0.2 : 0.8;
 }
 
-void ParticleFilter(PFStruct* S, char Z, char U, PFStruct* NS) {
-	int k = 0;
-	int j;
-	for (int i = 0; i < l; i++)
-	{
-		j = sample(S);          //sample a partile i based on its weight 
-		if (U == 'F' || U == 'f') {
-			int steps;
-			cout << "Enter num of steps: " << endl;
-			cin >> steps;
-			forWord(steps, S[j]);
-		}
-		else if (U == 'R' || U == 'r') {
-			rotate(S[j]);
-		}
-		update(S[j], Z);
-		NS[k] = S[j];
-		k++;
-	}
-	normalize(S);
-
+void particleFilter(PFStruct *S, char Z, PFStruct *NS, float dis, float angle) {
+  for (int i = 0; i < NUMParticles; i++) {
+    int j = sample(S);
+    forward(dis, S[j]);
+    rotate(angle, S[j]);
+    update(S[j], Z);
+    NS[i] = S[j];
+  }
+  normalize(S);
 }
 
-
-void initi(PFStruct* S) {
-	for (int i = 0; i < l; i++)
-	{
-		S[i].x = abs(rand() % 101); //between min and max of the environment
-		S[i].y = abs(rand() % 101); //between min and max of the environment
-		S[i].theta = fmod(abs(rand()), 360.0); // theta between 0 and 360 
-		S[i].w = 0.01; //sum of particles =1
-	}
+void initializeParticles(PFStruct *S) {
+  for (int i = 0; i < NUMParticles; i++) {
+    S[i].x = fmod(abs(rand() % 101), 100.0);
+    S[i].y = fmod(abs(rand() % 101), 100.0);
+    S[i].theta = fmod(abs(rand()), 360.0);
+    S[i].w = 0.01;
+  }
 }
 
+void report(PFStruct *S, float robotX, float robotY) {
+  float meanParticleX = 0.0, meanParticleY = 0.0, varParticleX = 0.0,
+        varParticleY = 0.0;
 
-void main() {
-	PFStruct S[l];
-	PFStruct NS[l];
-	initi(S);
-	char Z;
-	char U;
-	while (1)
-	{
-		cout << "Enter the value of U: " << endl;
-		cin >> U;
-		cout << "Enter the value of Z (W/B): " << endl;
-		cin >> Z;
-		ParticleFilter(S, Z, U, NS);
-		int j = 0;
-		for (int i = 0; i < l; i++)
-		{
-			S[i] = NS[j];
-			j++;
-		}
-	}
+  for (int i = 0; i < NUMParticles; i++) {
+    meanParticleX += S[i].x;
+    meanParticleY += S[i].y;
+  }
 
+  meanParticleX /= static_cast<float>(NUMParticles);
+  meanParticleY /= static_cast<float>(NUMParticles);
 
+  for (int i = 0; i < NUMParticles; i++) {
+    varParticleX += pow(S[i].x - meanParticleX, 2);
+    varParticleY += pow(S[i].y - meanParticleY, 2);
+  }
+
+  varParticleX /= static_cast<float>(NUMParticles);
+  varParticleY /= static_cast<float>(NUMParticles);
+
+  cout << robotX << " " << robotY << " " << meanParticleX << " "
+       << meanParticleY << " " << varParticleX << " " << varParticleY << "\n";
+}
+
+char sensor(float x, float y) {
+  if ((0 <= x && x <= 50 && 0 <= y && y <= 50) ||
+      (50 <= x && x <= 100 && 50 <= y && y <= 100)) // Black
+    return 'b';
+  if ((0 <= x && x < 50 && 50 < y && y <= 100) ||
+      (50 < x && x <= 100 && 0 <= y && y < 50)) // White
+    return 'w';
+
+  return ' ';
+}
+
+int main() {
+  PFStruct S[NUMParticles];
+  PFStruct NS[NUMParticles];
+  initializeParticles(S);
+
+  char Z;
+  for (int i = 0; i <= 500; i++) {
+    float robotX, robotY, displacement, angle;
+    const string filePath =
+        "C:/Users/user/source/repos/Particle-Filter-Implementation/robot.csv";
+    readCSVLine(filePath, i + 2, robotX, robotY, displacement, angle);
+
+    Z = sensor(robotX, robotY);
+    particleFilter(S, Z, NS, displacement, angle);
+    report(S, robotX, robotY);
+
+    for (int i = 0; i < NUMParticles; i++) {
+      S[i] = NS[i];
+    }
+  }
+
+  return 0;
 }
